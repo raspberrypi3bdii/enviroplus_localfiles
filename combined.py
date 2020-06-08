@@ -80,8 +80,7 @@ variables = ["temperature",
              "nh3",
              "pm1",
              "pm25",
-             "pm10",
-             "time"]
+             "pm10"]
 
 units = ["C",
          "hPa",
