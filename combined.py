@@ -213,6 +213,7 @@ def main():
             if muestra == 1:
                 with open(filename, 'w') as f:
                     f.write(variables.__str__()[1:-1])
+                    f.write(''', time\n''')
                     f.write("\n")
 
             proximity = ltr559.get_proximity()
