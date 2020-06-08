@@ -80,7 +80,8 @@ variables = ["temperature",
              "nh3",
              "pm1",
              "pm25",
-             "pm10"]
+             "pm10",
+             "time"]
 
 units = ["C",
          "hPa",
@@ -205,139 +206,71 @@ def main():
     for v in variables:
         values[v] = [1] * WIDTH
 
+    filename: str = time.strftime("%Y%m%d_%H%M%S")
     # The main loop
     try:
-        while True:
+        muestra: int
+        for muestra in range(3599):
+            if muestra == 1:
+                with open(filename, 'w') as f:
+                    f.write(variables.__str__()[1:-1])
+                    f.write("\n")
+
             proximity = ltr559.get_proximity()
 
-            # If the proximity crosses the threshold, toggle the mode
-            if proximity > 1500 and time.time() - last_page > delay:
-                mode += 1
-                mode %= (len(variables) + 1)
-                last_page = time.time()
-
-            # One mode for each variable
-            if mode == 0:
-                # variable = "temperature"
-                unit = "C"
-                cpu_temp = get_cpu_temperature()
-                # Smooth out with some averaging to decrease jitter
-                cpu_temps = cpu_temps[1:] + [cpu_temp]
-                avg_cpu_temp = sum(cpu_temps) / float(len(cpu_temps))
-                raw_temp = bme280.get_temperature()
-                data = raw_temp - ((avg_cpu_temp - raw_temp) / factor)
-                display_text(variables[mode], data, unit)
-
-            if mode == 1:
-                # variable = "pressure"
-                unit = "hPa"
-                data = bme280.get_pressure()
-                display_text(variables[mode], data, unit)
-
-            if mode == 2:
-                # variable = "humidity"
-                unit = "%"
-                data = bme280.get_humidity()
-                display_text(variables[mode], data, unit)
-
-            if mode == 3:
-                # variable = "light"
-                unit = "Lux"
-                if proximity < 10:
-                    data = ltr559.get_lux()
-                else:
-                    data = 1
-                display_text(variables[mode], data, unit)
-
-            if mode == 4:
-                # variable = "oxidised"
-                unit = "kO"
-                data = gas.read_all()
-                data = data.oxidising / 1000
-                display_text(variables[mode], data, unit)
-
-            if mode == 5:
-                # variable = "reduced"
-                unit = "kO"
-                data = gas.read_all()
-                data = data.reducing / 1000
-                display_text(variables[mode], data, unit)
-
-            if mode == 6:
-                # variable = "nh3"
-                unit = "kO"
-                data = gas.read_all()
-                data = data.nh3 / 1000
-                display_text(variables[mode], data, unit)
-
-            if mode == 7:
-                # variable = "pm1"
-                unit = "ug/m3"
-                try:
-                    data = pms5003.read()
-                except pmsReadTimeoutError:
-                    logging.warn("Failed to read PMS5003")
-                else:
-                    data = float(data.pm_ug_per_m3(1.0))
-                    display_text(variables[mode], data, unit)
-
-            if mode == 8:
-                # variable = "pm25"
-                unit = "ug/m3"
-                try:
-                    data = pms5003.read()
-                except pmsReadTimeoutError:
-                    logging.warn("Failed to read PMS5003")
-                else:
-                    data = float(data.pm_ug_per_m3(2.5))
-                    display_text(variables[mode], data, unit)
-
-            if mode == 9:
-                # variable = "pm10"
-                unit = "ug/m3"
-                try:
-                    data = pms5003.read()
-                except pmsReadTimeoutError:
-                    logging.warn("Failed to read PMS5003")
-                else:
-                    data = float(data.pm_ug_per_m3(10))
-                    display_text(variables[mode], data, unit)
-            if mode == 10:
-                # Everything on one screen
-                cpu_temp = get_cpu_temperature()
-                # Smooth out with some averaging to decrease jitter
-                cpu_temps = cpu_temps[1:] + [cpu_temp]
-                avg_cpu_temp = sum(cpu_temps) / float(len(cpu_temps))
-                raw_temp = bme280.get_temperature()
-                raw_data = raw_temp - ((avg_cpu_temp - raw_temp) / factor)
-                save_data(0, raw_data)
+            # Everything on one screen
+            cpu_temp = get_cpu_temperature()
+            # Smooth out with some averaging to decrease jitter
+            cpu_temps = cpu_temps[1:] + [cpu_temp]
+            avg_cpu_temp = sum(cpu_temps) / float(len(cpu_temps))
+            raw_temp = bme280.get_temperature()
+            temp = raw_temp - ((avg_cpu_temp - raw_temp) / factor)
+            save_data(0, temp)
+            display_everything()
+            pressure = bme280.get_pressure()
+            save_data(1, pressure)
+            display_everything()
+            humidity = bme280.get_humidity()
+            save_data(2, humidity)
+            if proximity < 10:
+                lux = ltr559.get_lux()
+            else:
+                lux = 1
+            save_data(3, lux)
+            display_everything()
+            gas_data = gas.read_all()
+            save_data(4, gas_data.oxidising / 1000)
+            save_data(5, gas_data.reducing / 1000)
+            save_data(6, gas_data.nh3 / 1000)
+            display_everything()
+            pms_data = None
+            try:
+                pms_data = pms5003.read()
+            except pmsReadTimeoutError:
+                logging.warn("Failed to read PMS5003")
+            else:
+                save_data(7, float(pms_data.pm_ug_per_m3(1.0)))
+                save_data(8, float(pms_data.pm_ug_per_m3(2.5)))
+                save_data(9, float(pms_data.pm_ug_per_m3(10)))
                 display_everything()
-                raw_data = bme280.get_pressure()
-                save_data(1, raw_data)
-                display_everything()
-                raw_data = bme280.get_humidity()
-                save_data(2, raw_data)
-                if proximity < 10:
-                    raw_data = ltr559.get_lux()
-                else:
-                    raw_data = 1
-                save_data(3, raw_data)
-                display_everything()
-                gas_data = gas.read_all()
-                save_data(4, gas_data.oxidising / 1000)
-                save_data(5, gas_data.reducing / 1000)
-                save_data(6, gas_data.nh3 / 1000)
-                display_everything()
-                pms_data = None
-                try:
-                    pms_data = pms5003.read()
-                except pmsReadTimeoutError:
-                    logging.warn("Failed to read PMS5003")
-                else:
-                    save_data(7, float(pms_data.pm_ug_per_m3(1.0)))
-                    save_data(8, float(pms_data.pm_ug_per_m3(2.5)))
-                    save_data(9, float(pms_data.pm_ug_per_m3(10)))
-                    display_everything()
+            sampletime = time.strftime("%Y%m%d_%H%M%S")
+            # Create a list of data
+            data = [str(temp),
+                    str(pressure),
+                    str(humidity),
+                    str(gas_data.oxidising / 1000),
+                    str(gas_data.reducing / 1000),
+                    str(gas_data.nh3 / 1000),
+                    str(pms_data.pm_ug_per_m3(1.0)),
+                    str(pms_data.pm_ug_per_m3(2.5)),
+                    str(pms_data.pm_ug_per_m3(10)),
+                    sampletime]
+            print(muestra)
+            time.sleep(1)
+            with open(filename, 'a') as f:
+                f.write(data.__str__()[1:-1])
+                f.write("\n")
+            f.close()
 
     # Exit cleanly
     except KeyboardInterrupt:
