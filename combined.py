@@ -205,10 +205,9 @@ def main():
     for v in variables:
         values[v] = [1] * WIDTH
 
-    filename: str = time.strftime("%Y%m%d_%H%M%S")
+    filename = time.strftime("%Y%m%d_%H%M%S")
     # The main loop
     try:
-        muestra: int
         for muestra in range(3599):
             if muestra == 1:
                 with open(filename, 'w') as f:
