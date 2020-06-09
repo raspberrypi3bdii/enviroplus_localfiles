@@ -206,7 +206,7 @@ def main():
         values[v] = [1] * WIDTH
 
     filename = time.strftime("%Y%m%d_%H%M%S")
-    route = "/home/pi/Proyectos/enviroplus_localfiles/output_data" + filename
+    route = "/home/pi/Proyectos/enviroplus_localfiles/output_data/salida_" + filename
     print(route)
     # The main loop
     try:
