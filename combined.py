@@ -206,11 +206,13 @@ def main():
         values[v] = [1] * WIDTH
 
     filename = time.strftime("%Y%m%d_%H%M%S")
+    route = "/home/pi/Proyectos/enviroplus_localfiles/output_data" + filename
+    print(route)
     # The main loop
     try:
         for muestra in range(3599):
             if muestra == 1:
-                with open(filename, 'w') as f:
+                with open(route, 'w') as f:
                     f.write(variables.__str__()[1:-1])
                     f.write(", 'time'\n")
 
@@ -265,7 +267,7 @@ def main():
                     sampletime]
             print(muestra)
             time.sleep(1)
-            with open(filename, 'a') as f:
+            with open(route, 'a') as f:
                 f.write(data.__str__()[1:-1])
                 f.write("\n")
             f.close()
